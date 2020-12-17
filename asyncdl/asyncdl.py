@@ -1,8 +1,16 @@
 import asyncio
+import socket
+from urllib.parse import urlparse
 
+from aiodns.error import DNSError
 from aiohttp import ClientSession
 from aiodns import DNSResolver
 from typing import *
+
+
+ERROR_MESSAGE_INSECURE_URL = 'An insecure URL was provided while https_only was enabled; refusing to proceed'
+ERROR_MESSAGE_NO_HOSTNAME  = 'The specified URL is missing a hostname; unable to proceed'
+ERROR_MESSAGE_DNS_FAILURE       = 'Failed to resolve the domains IP address; unable to proceed'
 
 
 async def download_file(
@@ -31,7 +39,35 @@ async def download_file(
     Returns:
 
     """
-    pass
+    # Make sure we have a valid schema
+    if not url.lower().startswith(('https://', 'http://')):
+        if https_only:
+            url = 'https://' + url
+        else:
+            url = 'http://' + url
+
+    # Make sure the domain is secure if https_only is set
+    if https_only and not url.lower().startswith('https://'):
+        raise BadUrlError(ERROR_MESSAGE_INSECURE_URL)
+
+    # Parse the URL into components
+    parsed_url = urlparse(url)
+    if not parsed_url.hostname:
+        raise BadUrlError(ERROR_MESSAGE_NO_HOSTNAME)
+
+    # Pre-resolve the hostname if necessary
+    if ssrf_protection:
+        resolver = DNSResolver(loop)
+
+        # We perform DNS resolutions via the systems hosts file first if available
+        try:
+            res = await resolver.gethostbyname(parsed_url.hostname, socket.AF_INET)
+        except DNSError:
+            raise BadUrlError(ERROR_MESSAGE_DNS_FAILURE)
+
+        for ip in res.addresses:
+            pass
+
 
 
 async def download_bytesio(
@@ -46,4 +82,12 @@ async def download_bytesio(
 
 
 async def _perform_request():
+    pass
+
+
+class BadUrlError(Exception):
+    pass
+
+
+class FilesizeError(Exception):
     pass
