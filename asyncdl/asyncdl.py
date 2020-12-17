@@ -82,6 +82,9 @@ async def download_file(
     async with ClientSession(loop=loop, raise_for_status=True, **session_args) as session:  # type: ClientSession
         async with session.get(url, read_until_eof=max_size is None) as response:  # type: ClientResponse
             if (response.content_length and max_size) and response.content_length > max_size:
+                fh.close()
+                if hasattr(fh, 'name'):
+                    os.remove(fh.name)
                 raise FilesizeError(response.content_length)
 
             bytes_read = 0
