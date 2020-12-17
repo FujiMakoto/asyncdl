@@ -74,7 +74,7 @@ async def download_file(
             raise BadUrlError(ERROR_MESSAGE_DNS_FAILURE)
 
         for ip in res.addresses:
-            ip = ipaddress.ip_address(ip)  # type: Union[ipaddress.IPv4Address, ipaddress.IPv6Address]
+            ip = ipaddress.ip_address(ip)  # type: typing.Union[ipaddress.IPv4Address, ipaddress.IPv6Address]
             if ip.is_private:
                 raise SecurityError(ip)
 
